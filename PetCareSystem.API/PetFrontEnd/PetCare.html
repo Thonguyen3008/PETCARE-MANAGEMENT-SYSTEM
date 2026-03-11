@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Khách Hàng - Pet Care</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h2 class="text-center text-primary mb-4">HỆ THỐNG QUẢN LÝ THÚ Y</h2>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Thêm Khách Hàng Mới</h5>
+                </div>
+                <div class="card-body">
+                    <form id="customerForm">
+                        <div class="mb-3">
+                            <label>Họ và Tên (*)</label>
+                            <input type="text" class="form-control" id="fullname" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Số điện thoại (*)</label>
+                            <input type="text" class="form-control" id="phone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Địa chỉ</label>
+                            <input type="text" class="form-control" id="address">
+                        </div>
+                        <div class="mb-3">
+                            <label>Email</label>
+                            <input type="email" class="form-control" id="email">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Lưu Khách Hàng</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Danh sách Chủ nuôi</h5>
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>ID</th>
+                                <th>Họ Tên</th>
+                                <th>SĐT</th>
+                                <th>Địa chỉ</th>
+                                <th>Thú cưng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CHÚ Ý: Đổi cổng 5xxx cho khớp với cổng mà API C# của bạn đang chạy
+    const API_BASE_URL = 'http://localhost:5255/api/Customer'; 
+
+    // Hàm 1: Dùng lệnh GET để lấy danh sách khách hàng
+    async function loadCustomer() {
+        try {
+            const response = await fetch(API_BASE_URL);
+            const customers = await response.json();
+            
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = ''; // Xóa dữ liệu cũ
+
+            // Duyệt qua từng khách hàng và tạo dòng <tr> cho bảng
+            customers.forEach(cus => {
+                // Đếm số lượng thú cưng (nếu có)
+                const petCount = cus.pets ? cus.pets.length : 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${cus.customerID}</td>
+                    <td class="fw-bold">${cus.fullname}</td>
+                    <td>${cus.phoneNumber}</td>
+                    <td>${cus.address || 'Chưa cập nhật'}</td>
+                    <td><span class="badge bg-info">${petCount} bé</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu:', error);
+            alert('Không thể kết nối đến máy chủ API!');
+        }
+    }
+
+    // Hàm 2: Xử lý khi bấm nút "Lưu Khách Hàng" (Lệnh POST)
+    document.getElementById('customerForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); // Chặn hành động tải lại trang mặc định của Form
+
+        // Thu thập dữ liệu từ các ô input
+        const newCustomer = {
+            fullname: document.getElementById('fullname').value,
+            phoneNumber: document.getElementById('phone').value,
+            address: document.getElementById('address').value,
+            email: document.getElementById('email').value,
+            password: null // Khách vãng lai không cần pass như đã thống nhất
+        };
+
+        try {
+            // Gửi dữ liệu lên API bằng phương thức POST
+            const response = await fetch(API_BASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newCustomer)
+            });
+
+            if (response.ok) {
+                alert('Thêm khách hàng thành công!');
+                document.getElementById('customerForm').reset(); // Xóa trắng form
+                loadCustomer(); // Gọi lại hàm lấy danh sách để bảng tự động cập nhật
+            } else {
+                alert('Có lỗi xảy ra khi lưu dữ liệu!');
+            }
+        } catch (error) {
+            console.error('Lỗi POST:', error);
+        }
+    });
+
+    // Tự động gọi hàm lấy danh sách khi trang web vừa mở lên
+    window.onload = loadCustomer;
+</script>
+
+</body>
+</html>
